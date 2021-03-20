@@ -6,32 +6,19 @@ import atexit
 import logging
 import os
 from tempfile import gettempdir
-from typing import List
 
 from i3ipc import Event
 from i3ipc.aio import Connection
 from i3ipc.events import WindowEvent
-from i3ipc.replies import InputReply
 
 __version__ = "0.2.5"
 
 class State:
-    def __init__(self, conn: Connection, inputs: List[InputReply], input_identifier: str, default_lang: str):
+    def __init__(self, conn: Connection, default_lang: str):                                                                                                   
         self._last_id = -1
         self._lang_state = {}
         self._connection = conn
-        self._input_identifier = input_identifier
-
-        for index, sway_input in enumerate(inputs):
-            if sway_input.identifier == self._input_identifier:
-                self._input_index = index
-
-        if default_lang is None:
-            self._default_lang = None
-        else:
-            for index, lang in enumerate(inputs[self._input_index].xkb_layout_names):
-                if lang == default_lang:
-                    self._default_lang = index
+        self._default_lang = default_lang
 
     async def window_focus(self, _: Connection, event: WindowEvent):
         current_id = event.container.id
@@ -69,21 +56,31 @@ class State:
         finally:
             self._last_id = -1
 
-    async def _set_lang(self, lang: int):
-        await self._connection.command(
-            f"input {self._input_identifier} xkb_switch_layout {lang}"
-        )
+    async def _set_lang(self, lang):
+        if isinstance(lang, str): # just a layout name
+            inputs = await self._connection.get_inputs()
+            for inp in inputs:
+                if inp.type == 'keyboard':
+                    for layout_index, layout_name in enumerate(inp.xkb_layout_names):
+                        if lang == layout_name:
+                            await self._connection.command(f"input {inp.identifier} xkb_switch_layout {layout_index}")
+        else: # input id to layout index map
+            for input_id in lang:
+                await self._connection.command(f"input {input_id} xkb_switch_layout {lang[input_id]}")
 
-    async def _get_lang(self) -> int:
+    async def _get_lang(self) -> {}:
+        input_to_layout_index = {}
         inputs = await self._connection.get_inputs()
-        return inputs[self._input_index].xkb_active_layout_index
+        for i in inputs:
+            if i.type == 'keyboard':
+                input_to_layout_index[i.identifier] = i.xkb_active_layout_index
 
+        return input_to_layout_index
 
-async def _entrypoint(input_identifier: str, default_lang: str):
+async def _entrypoint(default_lang: str):
     conn = await Connection(auto_reconnect=True).connect()
-    inputs = await conn.get_inputs()
 
-    st = State(conn, inputs, input_identifier, default_lang)
+    st = State(conn, default_lang)
 
     conn.on(Event.WINDOW_FOCUS, st.window_focus)
     conn.on(Event.WINDOW_CLOSE, st.window_close)
@@ -118,12 +115,6 @@ def _parse_args():
         const=True,
         default=False,
         help="run in background (default: false)",
-    )
-    parser.add_argument(
-        "--input-identifier", "-i",
-        action="store",
-        default="1:1:AT_Translated_Set_2_keyboard",
-        help="keyboard identifier from output of swaymsg -t get_inputs"
     )
     parser.add_argument(
         "--default-lang", "-D",
@@ -182,12 +173,12 @@ def main():
 
     atexit.register(_cleanup)
     os.write(fd, str(os.getpid()).encode())
-    _start(args.input_identifier, args.default_lang)
+    _start(args.default_lang)
 
 
-def _start(input_identifier, default_lang):
+def _start(default_lang):
     try:
-        asyncio.get_event_loop().run_until_complete(_entrypoint(input_identifier, default_lang))
+        asyncio.get_event_loop().run_until_complete(_entrypoint(default_lang))
     except KeyboardInterrupt:
         logging.debug("shutdown")
 

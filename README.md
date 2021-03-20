@@ -35,15 +35,10 @@ Also you can download compiled binary from [release page](https://github.com/nmu
 ### sway-xkb-switcher
 
 ```bash
-$ sway-xkb-switcher --input-identifier "1:1:AT_Translated_Set_2_keyboard"
+$ sway-xkb-switcher
 ```
 
-You can view a list of actual identifiers by looking at
-
-```bash
-$ swaymsg -t get_inputs | grep identifier
-```
-The identifier corresponds to that from the input section of your sway config.
+This will track the layout of all your keyboards.
 
 #### Default layout for new windows
 
@@ -51,11 +46,10 @@ If you like all your new windows start with default layout,
 you can specify it with parameter `--default-lang` (`-D`).
 
 ```bash
-$ sway-xkb-switcher --input-identifier "1:1:AT_Translated_Set_2_keyboard" \
---default-lang "English (US)"
+$ sway-xkb-switcher --default-lang "English (US)"
 ```
 
-You can obtain list of avaliable layout names from running the following `swaymsg` comand.
+You can obtain list of available layout names from running the following `swaymsg` command.
 
 ```bash
 $ swaymsg -t get_inputs | grep -A 2 xkb_layout_names
