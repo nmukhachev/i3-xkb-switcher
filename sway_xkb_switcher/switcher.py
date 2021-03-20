@@ -11,7 +11,7 @@ from i3ipc import Event
 from i3ipc.aio import Connection
 from i3ipc.events import WindowEvent
 
-__version__ = "0.2.5"
+__version__ = "0.3.0"
 
 class State:
     def __init__(self, conn: Connection, default_lang: str):                                                                                                   
