@@ -138,7 +138,7 @@ def _parse_args():
 def _build_log_config(args):
     basic_cfg = dict(
         format="%(asctime)s - %(levelname)s - %(message)s",
-        datefmt="%I:%M:%S",
+        datefmt="%H:%M:%S",
         level=logging.DEBUG if args.debug else logging.CRITICAL,
     )
 
