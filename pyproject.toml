@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sway-xkb-switcher"
-version = "0.2.5"
+version = "0.3.0"
 description = "Keyboard layout switcher for sway windows"
 authors = ["Innokenty Lebedev", "Nikolay Mukhachev", "Peter Mukhachev"]
 maintainers = ["Nikolay Mukhachev"]
